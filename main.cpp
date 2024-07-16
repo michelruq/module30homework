@@ -4,12 +4,19 @@
 #include <fstream>
 #include <future>
 
+#include "requesthandler.h"
+
 using namespace std;
 
 bool make_thread = true;
 
+RequestHandlerThreadQueue rhq;
+
 void quicksort(int *array, long left, long right) {
-   if(left >= right) return;
+   if(left >= right) 
+   {
+       return;
+   }
    long left_bound = left;
    long right_bound = right;
 
@@ -31,13 +38,14 @@ void quicksort(int *array, long left, long right) {
        }
    } while (left_bound <= right_bound);
 
-   if(make_thread && (right_bound - left > 10000))
+   if(make_thread /*&& (right_bound - left > 10)*/)
    {
        // если элементов в левой части больше чем 10000
        // вызываем асинхронно рекурсию для правой части
-       auto f = async(launch::async, [&]() {
+       /*auto f = async(launch::async, [&]() {
            quicksort(array,left,right_bound);
-       });
+       });*/
+       rhq.pushRequest(quicksort, array, left_bound, right);
        quicksort(array, left_bound, right);
    } else {
        // запускаем обе части синхронно
@@ -80,12 +88,12 @@ void read_arr(const string& filename, int*& arr, int& n)
 
 int main(int argc, char* argv[])
 {
-   std::string filenameInput = "C://skillfactoryeducation/module30/module30homework/test/unsorteddata.txt";
-   std::string filenameOutput = "C://skillfactoryeducation/module30/module30homework/test/sorteddata.txt";
-   std::string filenameInput1 = "C://skillfactoryeducation/module30/module30homework/test/unsorteddata1.txt";
-   std::string filenameOutput1 = "C://skillfactoryeducation/module30/module30homework/test/sorteddata1.txt";
+   std::string filenameInput = "C://skillfactoryeducation/module30/module30homeworktemp1/module30homework/test/unsorteddata.txt";
+   std::string filenameOutput = "C://skillfactoryeducation/module30/module30homeworktemp1/module30homework/test/sorteddata.txt";
+   std::string filenameInput1 = "C://skillfactoryeducation/module30/module30homeworktemp1/module30homework/test/unsorteddata1.txt";
+   std::string filenameOutput1 = "C://skillfactoryeducation/module30/module30homeworktemp1/module30homework/test/sorteddata1.txt";
    
-   long arr_size = 10000000;
+   long arr_size = 10;
    int* array = new int[arr_size];
    int* array1 = new int[arr_size];
 
@@ -99,6 +107,7 @@ int main(int argc, char* argv[])
 
    auto start = std::chrono::high_resolution_clock::now();
 
+   auto promise = std::make_shared<std::promise<void>>();
    quicksort(array, 0, arr_size-1);
 
    auto finish = std::chrono::high_resolution_clock::now();
